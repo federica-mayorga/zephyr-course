@@ -1,6 +1,8 @@
 # Build
 build
+build-*
 
 # West files
 .west
+.venv
 deps
