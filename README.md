@@ -43,7 +43,7 @@ A dedicated workspace was created and initialized using `west`. Dependencies wer
 
 Commands used:
 
-```
+```bash
 python3 -m venv .venv
 source .venv/bin/activate
 pip install west
@@ -55,27 +55,41 @@ west zephyr-export
 
 The Zephyr SDK was automatically detected and configured for the build system.
 
+### Checking Setup
+
+In order to check everything was properly installed, do the following.
+
+Open a new terminal, step into the workspace and enable the build environment:
+
+```bash
+cd zephyr-course-workspace/
+
+source .venv/bin/activate
+source ./zephyr/zephyr-env.sh
+```
 ### Build and flash on hardware
 
 The Blinky sample application was built and flashed to the nRF54L15 DK development board.
 
 Command used to build:
 
-```
-west build -b nrf54l15dk/nrf54l05/cpuapp /samples/l2-t1/blinky -d build-l2-t1
+```bash
+west build -b nrf54l15dk/nrf54l05/cpuapp app/ -d build-l2-t1
 ```
 
 Command used to flash:
 
-```
+```bash
 west flash -d build-l2-t1
 ```
 
 The firmware was successfully programmed into the board, and the LED toggled as expected, confirming correct execution on the physical device.
 
 #### Evidence
+<video width="640" height="360" controls>
+  <source src="img/l2-t1-video.mp4" type="video/mp4">
+</video>
 
-https://github.com/user-attachments/assets/3c87908b-f63c-418c-8109-ab3be2422140
 
 ### Build and execution on native simulation
 
@@ -83,20 +97,21 @@ The same application was built for the native simulation target and executed loc
 
 Command used to build:
 
-```
-west build -b native_sim samples/l2-t1/blinky -d build-l2-t1-native
+```bash
+west build -b native_sim app/ -d build-l2-t1-native
 ```
 
 Command used to run:
 
-```
+```bash
 west build -d build-l2-t1-native -t run
 ```
 
 Console output confirmed the expected LED toggle behavior in the simulated environment.
 
-#### Evidence 
-<img width="1904" height="271" alt="Screenshot from 2026-04-26 21-07-24" src="https://github.com/user-attachments/assets/17517363-2b50-4b9f-b8a3-a5216e262a5d" />
+#### Evidence
+![screenshot-from-l2-t1-native](img/l2-t1-native.png)
+
 
 ### Result
 
