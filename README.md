@@ -123,3 +123,74 @@ This task validates the complete Zephyr development workflow, including:
 * Flashing to target hardware
 * Execution in native simulation
 
+---
+
+# Lesson 3
+
+## Task 1
+
+1. Reproduce a custom Kconfig menu for an LED subsystem.
+
+    1. Create a top-level `menuconfig` option.
+    2. Add a `choice` for blink sleep timing (250ms, 500ms, 1s, 2s) with hidden int symbol.
+    3. Include a `menuconfig` for advanced and a `menu` for expert configuration sections.
+    4. Integrate the configuration into Zephyr’s Kconfig system.
+
+2. Build the application and verify configuration via `menuconfig`.
+
+    1. Open the configuration interface.
+    2. Navigate through the custom menu.
+    3. Modify parameters and save configuration.
+
+This task demonstrates how to extend Zephyr’s configuration system by defining a custom Kconfig structure and integrating it into the global configuration tree.
+
+### Kconfig Implementation
+
+A custom `Kconfig` file was added to the application in order to define a configurable LED subsystem.
+
+Key features implemented:
+
+- A top-level `menuconfig` (`LED_SUBSYSTEM`)
+- A `choice` for selecting blink intervals (250ms, 500ms, 1s, 2s)
+- A hidden integer symbol (`LED_BLINKING_PERIOD`) derived from the selected option
+- An `Advanced LED settings` submenu
+- An `Expert settings` menu with conditional visibility (`visible if`)
+- Use of `range` to constrain valid values
+
+Additionally, the application Kconfig includes Zephyr’s base configuration:
+
+```bash
+source "Kconfig.zephyr"
+```
+
+This ensures that all standard Zephyr symbols (e.g., GPIO, LOG) remain available.
+
+### Build and Configuration
+
+The application was built using the following command:
+
+```bash
+west build -b nrf54l15dk/nrf54l15/cpuapp app/ -p -d build-l3-t1
+```
+
+To access the configuration interface:
+
+```bash
+west build -t menuconfig -d build-l3-t1
+```
+
+#### Evidence
+<video width="640" height="360" controls>
+  <source src="img/l3-t1-video.mp4" type="video/mp4">
+</video>
+
+### Result
+
+This task validates:
+
+* Integration of a custom Kconfig into Zephyr
+* Use of menus, choices, and conditional visibility
+* Parameter validation with ranges
+* Interaction with Zephyr’s menuconfig system
+
+The LED subsystem is now fully configurable at build time through a structured and user-friendly interface.
