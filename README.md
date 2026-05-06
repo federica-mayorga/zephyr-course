@@ -86,9 +86,7 @@ west flash -d build-l2-t1
 The firmware was successfully programmed into the board, and the LED toggled as expected, confirming correct execution on the physical device.
 
 #### Evidence
-<video width="640" height="360" controls>
-  <source src="img/l2-t1-video.mp4" type="video/mp4">
-</video>
+![gif-from-l2-t1-native](img/l2-t1-video.gif)
 
 
 ### Build and execution on native simulation
