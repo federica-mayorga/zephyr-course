@@ -138,6 +138,7 @@ This task validates the complete Zephyr development workflow, including:
     1. Open the configuration interface.
     2. Navigate through the custom menu.
     3. Modify parameters and save configuration.
+    4. Push tag: `l3-task1`.
 
 This task demonstrates how to extend Zephyr’s configuration system by defining a custom Kconfig structure and integrating it into the global configuration tree.
 
