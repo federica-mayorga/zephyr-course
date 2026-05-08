@@ -190,3 +190,100 @@ This task validates:
 * Interaction with Zephyr’s menuconfig system
 
 The LED subsystem is now fully configurable at build time through a structured and user-friendly interface.
+
+---
+
+# Lesson 4
+
+## Task 1
+
+1. Create a Devicetree overlay for the application LED.
+
+    1. Add an `app.overlay` file.
+    2. Create an alias `app-led` pointing to the board `led0`.
+    3. Use `DT_ALIAS(app_led)` in the application.
+
+2. Add a configurable heartbeat period using Kconfig.
+
+    1. Define `APP_HEARTBEAT_PERIOD_MS`.
+    2. Set default value to 500.
+    3. Limit valid range to 100-2000.
+    4. Use the symbol as the LED blink delay.
+
+3. Build and verify configuration via `menuconfig`.
+
+    1. Open the configuration interface.
+    2. Modify the heartbeat period.
+    3. Rebuild and flash the firmware.
+    4. Verify LED blink speed changes accordingly.
+    5. Push tag: `l4-task1`.
+
+This task demonstrates the integration between Zephyr Devicetree and Kconfig systems by combining hardware abstraction with configurable application behavior.
+
+### Devicetree Overlay
+
+An `app.overlay` file was added to define an application-specific LED alias:
+
+```
+/ {
+    aliases {
+        app-led = &led0;
+    };
+};
+```
+
+The application accesses the LED using:
+
+```C++
+#define LED_NODE DT_ALIAS(app_led)
+```
+
+### Kconfig Integration
+
+A configurable heartbeat period was added through the application Kconfig file:
+
+```
+config APP_HEARTBEAT_PERIOD_MS
+    int "Heartbeat period in milliseconds"
+    range 100 2000
+    default 500
+```
+
+The configuration symbol is used directly in the application:
+
+```C++
+k_msleep(CONFIG_APP_HEARTBEAT_PERIOD_MS);
+```
+
+### Build and Configuration
+
+The application was built using:
+
+```bash
+west build -b nrf54l15dk/nrf54l15/cpuapp app/ -p -d build-l4-t1
+```
+
+To flash the firmware:
+
+```bash
+west flash -d build-l4-t1
+```
+
+To open the configuration interface:
+
+```bash
+west build -d build-l4-t1 -t menuconfig
+```
+
+#### Evidence
+![gif-from-l4-t1-native](img/l4-t1-video.gif)
+
+
+### Result
+
+This task validates:
+
+- Usage of Devicetree overlays in Zephyr
+- Creation of custom Devicetree aliases
+- Use of configurable Kconfig symbols
+- Integration between Devicetree, Kconfig, and application code
