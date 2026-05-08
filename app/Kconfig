@@ -59,6 +59,11 @@ if LED_SUBSYSTEM
 
 endif
 
+config APP_HEARTBEAT_PERIOD_MS
+    int "Heartbeat period in milliseconds"
+    range 100 2000
+    default 500
+
 menu "Zephyr Configuration"
 
 source "Kconfig.zephyr"
