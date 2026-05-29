@@ -1,0 +1,12 @@
+identifier: scratch_board/nrf54l15/cpuapp
+name: Scratch-Board-nRF54L15-Application
+type: mcu
+arch: arm
+toolchain:
+  - gnuarmemb
+  - zephyr
+ram: 188
+flash: 1428
+supported:
+  - gpio
+  - uart

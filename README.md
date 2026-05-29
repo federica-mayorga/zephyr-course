@@ -326,18 +326,18 @@ Key changes applied during the copy/rename process:
 - Shared `.dtsi` files renamed to `our_board_common.dtsi` and `our_board_nrf54l_05_10_15-pinctrl.dtsi`
 - Kconfig symbols updated to `BOARD_OUR_BOARD_*` in `Kconfig.our_board`, `Kconfig`, and `Kconfig.defconfig`
 
-Since the board lives outside the Zephyr tree, the build system must be told where to find it:
+Since the board lives outside the Zephyr tree, the build system must be told where to find it. The path must point to the directory that **contains** the `boards/` folder (in this case `app/`).
 
 ```bash
--DBOARD_ROOT=app
+-DBOARD_ROOT=$PWD/app
 ```
 
 ### Build and Flash
 
-Build the `hello_world` sample for the custom board:
+Build the `hello_world` sample for the custom board (run from the `zephyr-course/` directory):
 
 ```bash
-west build -b our_board/nrf54l15/cpuapp ../deps/zephyr/samples/hello_world -p -d build-l5-t1 -DBOARD_ROOT=app
+west build -b our_board/nrf54l15/cpuapp ../deps/zephyr/samples/hello_world -p -d build-l5-t1 -DBOARD_ROOT=$PWD/app
 ```
 
 To flash the firmware:
@@ -359,4 +359,109 @@ This task validates:
 - Creation of an out-of-tree board using the copy/rename method
 - Correct renaming of board files, identifiers, and Kconfig symbols
 - Registration of a custom board through `BOARD_ROOT`
+- Successful build of the `hello_world` sample for the custom board target
+
+## Task 2
+
+1. Create a custom board using the from-scratch method.
+
+    1. Define the minimum board metadata in `board.yml`.
+    2. Select the SoC in `Kconfig.scratch_board`.
+    3. Describe only the required hardware in `scratch_board_nrf54l15_cpuapp.dts`.
+
+2. Build the `hello_world` sample for said custom board.
+
+    1. Build for `scratch_board/nrf54l15/cpuapp`.
+    2. Flash to the nRF54L15 DK and verify serial output.
+
+3. Add a board init hook that prints `Board initialized` before application `main()`.
+
+4. Push tag: `l5-task2`.
+
+This task demonstrates how to define a complete but minimal out-of-tree board manually, without copying an existing in-tree board definition.
+
+### Custom Board Implementation
+
+A second board named `scratch_board` was created in `app/boards/scratch_board/` using only the files required for the nRF54L15 application core:
+
+```bash
+app/boards/scratch_board/
+├── board.yml
+├── Kconfig.scratch_board
+├── scratch_board_nrf54l15_cpuapp.dts
+├── scratch_board_nrf54l15_cpuapp.yaml
+├── scratch_board_nrf54l15_cpuapp_defconfig
+├── board.cmake
+├── board.c
+└── CMakeLists.txt
+```
+
+`board.yml` declares the board name, vendor, and target SoC:
+
+```yaml
+board:
+  name: scratch_board
+  full_name: Scratch Board
+  vendor: zephyr-course
+  socs:
+    - name: nrf54l15
+```
+
+`Kconfig.scratch_board` links the board to the correct SoC:
+
+```kconfig
+config BOARD_SCRATCH_BOARD
+	select SOC_NRF54L15_CPUAPP
+```
+
+The early board message is implemented in `board.c` with a `SYS_INIT()` hook that runs before application `main()`:
+
+```c
+static int scratch_board_init(void)
+{
+	printk("Board initialized\n");
+	return 0;
+}
+
+SYS_INIT(scratch_board_init, POST_KERNEL, CONFIG_KERNEL_INIT_PRIORITY_DEFAULT);
+```
+
+### Build and Flash
+
+Build the `hello_world` sample for the from-scratch board (run from the `zephyr-course/` directory):
+
+```bash
+west build -b scratch_board/nrf54l15/cpuapp ../deps/zephyr/samples/hello_world -p -d build-l5-t2 -DBOARD_ROOT=$PWD/app
+```
+
+To flash the firmware:
+
+```bash
+west flash -d build-l5-t2
+```
+
+Open a serial terminal on the board UART at 115200 baud. The expected output is:
+
+```
+Board initialized
+*** Booting Zephyr OS build ...
+Hello World! scratch_board/nrf54l15/cpuapp
+```
+
+The custom application in `app/` can also be built against the same board to keep the LED heartbeat behavior:
+
+```bash
+west build -b scratch_board/nrf54l15/cpuapp app/ -p -d build-l5-t2-app -DBOARD_ROOT=$PWD/app
+```
+
+#### Evidence
+![gif-from-l5-t2](img/l5-t2.png)
+
+### Result
+
+This task validates:
+
+- Creation of a minimal out-of-tree board from scratch
+- Manual definition of `board.yml`, Kconfig, and Devicetree files
+- Board-level initialization before application entry point
 - Successful build of the `hello_world` sample for the custom board target
