@@ -287,3 +287,76 @@ This task validates:
 - Creation of custom Devicetree aliases
 - Use of configurable Kconfig symbols
 - Integration between Devicetree, Kconfig, and application code
+
+---
+
+# Lesson 5
+
+## Task 1
+
+1. Create a custom board using the copy/rename method.
+
+    1. Copy the contents of `deps/zephyr/boards/nordic/nrf54l15dk`.
+    2. Rename the board directory and files to `our_board`.
+    3. Update board identifiers, Devicetree compatibles, and Kconfig symbols.
+
+2. Build the `hello_world` sample for the custom board.
+
+    1. Point Zephyr to the out-of-tree board with `BOARD_ROOT`.
+    2. Build for `our_board/nrf54l15/cpuapp`.
+    3. Flash to the nRF54L15 DK and verify serial output.
+
+3. Place the board directory in `<project_root>/boards/`.
+
+4. Push tag: `l5-task1`.
+
+This task demonstrates how to create an out-of-tree board definition by adapting an existing in-tree board and how to build a Zephyr sample against it.
+
+### Custom Board Implementation
+
+The nRF54L15 DK board was used as the reference and copied into `app/boards/our_board/`.
+
+Key changes applied during the copy/rename process:
+
+- Board directory renamed to `our_board`
+- Board metadata updated in `board.yml` (`name: our_board`, `vendor: zephyr-course`)
+- Variant files renamed to the `our_board_<soc>_<cluster>` pattern (`.yaml`, `.dts`, `_defconfig`)
+- YAML `identifier` fields updated.
+- Devicetree `compatible` strings updated.
+- Shared `.dtsi` files renamed to `our_board_common.dtsi` and `our_board_nrf54l_05_10_15-pinctrl.dtsi`
+- Kconfig symbols updated to `BOARD_OUR_BOARD_*` in `Kconfig.our_board`, `Kconfig`, and `Kconfig.defconfig`
+
+Since the board lives outside the Zephyr tree, the build system must be told where to find it:
+
+```bash
+-DBOARD_ROOT=app
+```
+
+### Build and Flash
+
+Build the `hello_world` sample for the custom board:
+
+```bash
+west build -b our_board/nrf54l15/cpuapp ../deps/zephyr/samples/hello_world -p -d build-l5-t1 -DBOARD_ROOT=app
+```
+
+To flash the firmware:
+
+```bash
+west flash -d build-l5-t1
+```
+
+#### Evidence
+
+Open a serial terminal on the board UART at 115200 baud (nRF Connect Serial Terminal, `minicom`, or `screen`). The expected output is:
+
+![gif-from-l5-t1](img/l5-t1.png)
+
+### Result
+
+This task validates:
+
+- Creation of an out-of-tree board using the copy/rename method
+- Correct renaming of board files, identifiers, and Kconfig symbols
+- Registration of a custom board through `BOARD_ROOT`
+- Successful build of the `hello_world` sample for the custom board target
