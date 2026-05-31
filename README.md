@@ -598,9 +598,12 @@ The on-board LED0 should blink (on after fetch, off after get; full blink period
 ![gif-from-l6-t1](img/l6-t1.gif)
 
 Open a serial terminal on the board UART at 115200 baud (`minicom`).
+
 ```bash
 minicom -D /dev/ttyACM1
 ```
+
+> NOTE: The device /dev/ttyACM1 might has a different name on your computer.
 
 The expected output alternates:
 
@@ -632,3 +635,101 @@ This task validates:
 - Kconfig and CMake wiring to enable and build the driver
 - Application use of the Zephyr sensor API instead of direct GPIO access
 - Visible LED blink driven by fetch/get timing without GPIO pin conflicts
+
+## Task 2
+
+1. Add a custom extension API to the LED sensor driver.
+
+    1. Define a `__subsystem` driver API with at least one function that changes a field in the dynamic data struct (`led_sensor_data`).
+    2. Expose wrapper functions for the application (`led_sensor_set_sample`, `led_sensor_get_sample`).
+
+2. Call the extension API from `main` before the sensor fetch/get cycle.
+
+3. Build, flash, and verify serial logs show the updated `sample` value.
+
+4. Push tag: `l6-task2`.
+
+This task extends the Task 1 sensor driver with a vendor-specific API layer, similar to the lecture `our_driver` pattern, while keeping the standard Zephyr sensor API for fetch and get.
+
+### Extension API Implementation
+
+A public header was added at `app/drivers/subsys/led_sensor/include/led_sensor.h`:
+
+```C
+__subsystem struct led_sensor_driver_api {
+    int (*set_sample)(const struct device *dev, int sample);
+    int (*get_sample)(const struct device *dev);
+};
+```
+
+The extension API table is stored in `led_sensor_config.api` and operates on `led_sensor_data.sample` (runtime data). `sensor_channel_get` returns this value in `val->val1`; `sensor_sample_fetch` only controls the GPIO and no longer overwrites `sample`, so values set through the extension API are preserved.
+
+Wrapper functions in `led_sensor.c` dispatch through the config pointer:
+
+```C
+int led_sensor_set_sample(const struct device *dev, int sample);
+int led_sensor_get_sample(const struct device *dev);
+```
+
+The driver CMakeLists adds the include path for the application:
+
+```cmake
+target_include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+```
+
+### Application Changes
+
+`main` includes `<led_sensor.h>` and calls the extension API each loop iteration before `sensor_sample_fetch_chan`:
+
+```C
+led_sensor_set_sample(led_sensor, led_state ? 1 : 0);
+sensor_sample_fetch_chan(led_sensor, SENSOR_CHAN_ALL);
+/* ... */
+LOG_INF("LED state: %s, sample: %d", led_state ? "ON" : "OFF",
+        led_sensor_get_sample(led_sensor));
+```
+
+### Build and Flash
+
+Build and flash from the `zephyr-course/` directory (same board and `BOARD_ROOT` as Task 1):
+
+```bash
+west build -b our_board/nrf54l15/cpuapp app/ -p -d build-l6-t2 -DBOARD_ROOT=$PWD/app
+```
+
+To flash the firmware:
+
+```bash
+west flash -d build-l6-t2
+```
+
+Open a serial terminal on the board UART at 115200 baud (`minicom`).
+
+```bash
+minicom -D /dev/ttyACM1
+```
+
+> NOTE: The device /dev/ttyACM1 might has a different name on your computer.
+
+#### Evidence
+
+The serial log must include the `sample` field, alternating between `0` and `1`, which confirms the extension API is updating `led_sensor_data.sample` and `led_sensor_get_sample()` is reachable from the application:
+
+```
+[00:00:00.500,000] <inf> main: LED state: OFF, sample: 1
+[00:00:01.000,000] <inf> main: LED state: ON, sample: 0
+[00:00:01.500,000] <inf> main: LED state: OFF, sample: 1
+```
+
+![screenshot-from-l6-t2](img/l6-t2.png)
+
+> The LED continues to blink as in Task 1; the screenshot above is the primary evidence for Task 2.
+
+### Result
+
+This task validates:
+
+- Definition of a custom `__subsystem` extension API alongside the Zephyr sensor driver API
+- Modification of a runtime (`dev->data`) field through the extension API
+- Application use of driver-specific wrappers instead of accessing driver data directly
+- Correct interaction between extension API, `sample_fetch` / `channel_get`, and logging
