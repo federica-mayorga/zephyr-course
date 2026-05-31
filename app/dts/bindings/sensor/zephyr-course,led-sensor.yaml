@@ -1,0 +1,11 @@
+description: On-board LED exposed as a simple sensor
+
+compatible: "zephyr-course,led-sensor"
+
+include: sensor-device.yaml
+
+properties:
+  gpios:
+    type: phandle-array
+    required: true
+    description: GPIO connected to the LED

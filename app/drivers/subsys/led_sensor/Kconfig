@@ -1,0 +1,19 @@
+menuconfig LED_SENSOR
+	bool "Enable LED sensor driver"
+	default y
+	depends on DT_HAS_ZEPHYR_COURSE_LED_SENSOR_ENABLED
+	select GPIO
+	select SENSOR
+	help
+	  Out-of-tree sensor driver for the on-board LED.
+	  sensor_sample_fetch turns the LED on; sensor_channel_get turns it off.
+
+if LED_SENSOR
+
+config LED_SENSOR_INIT_STATE
+	bool "Start LED high at driver init"
+	default n
+	help
+	  When enabled, the LED is driven high during led_sensor_init().
+
+endif

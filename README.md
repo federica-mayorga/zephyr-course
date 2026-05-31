@@ -465,3 +465,170 @@ This task validates:
 - Manual definition of `board.yml`, Kconfig, and Devicetree files
 - Board-level initialization before application entry point
 - Successful build of the `hello_world` sample for the custom board target
+
+---
+
+# Lesson 6
+
+## Task 1
+
+1. Create a sensor driver following the driver structure from the lecture.
+
+2. Implement `sensor_sample_fetch` and `sensor_channel_get` for an on-board LED.
+
+    1. `sensor_sample_fetch` turns the LED on; `sensor_channel_get` turns it off.
+    3. Add Devicetree binding, overlay node, Kconfig, and CMake integration.
+    4. Update the application to use the sensor API instead of direct GPIO calls.
+
+3. Build, flash, and verify LED blink and serial logs.
+
+4. Push tag: `l6-task1`.
+
+This task demonstrates how to implement an out-of-tree Zephyr sensor driver and integrate it with Devicetree, Kconfig, and application code.
+
+### Driver Implementation
+
+An out-of-tree sensor driver was added under `app/drivers/subsys/led_sensor/`.
+
+The driver registers with the Zephyr sensor subsystem using `DEVICE_API(sensor, ...)` and `SENSOR_DEVICE_DT_INST_DEFINE`. The public API is the standard sensor interface from `<zephyr/drivers/sensor.h>`:
+
+- `sensor_sample_fetch` drives the LED GPIO high
+- `sensor_channel_get` drives the LED GPIO low and returns the last sampled value on `SENSOR_CHAN_PROX`
+
+Directory layout:
+
+```bash
+app/
+├── drivers/subsys/led_sensor/
+│   ├── led_sensor.c
+│   ├── CMakeLists.txt
+│   └── Kconfig
+├── dts/bindings/sensor/zephyr-course,led-sensor.yaml
+├── dts/bindings/vendor-prefixes.txt
+└── app.overlay
+```
+
+### Kconfig Integration
+
+The driver is enabled through a `menuconfig` option sourced from the application Kconfig under **Custom drivers**:
+
+```
+menuconfig LED_SENSOR
+    bool "Enable LED sensor driver"
+    depends on DT_HAS_ZEPHYR_COURSE_LED_SENSOR_ENABLED
+    select GPIO
+    select SENSOR
+```
+
+`prj.conf` enables the driver and the sensor subsystem:
+
+```
+CONFIG_SENSOR=y
+CONFIG_LED_SENSOR=y
+```
+
+CMake only compiles the driver when `CONFIG_LED_SENSOR` is set, and `BOARD_ROOT` must point to the directory that contains `boards/` (that is, `app/`).
+
+### Devicetree Overlay
+
+The overlay defines the sensor node and a `led-sensor` alias (same GPIO as board `led0`):
+
+```
+/ {
+    aliases {
+        led-sensor = &led_sensor;
+    };
+
+    led_sensor: led-sensor {
+        compatible = "zephyr-course,led-sensor";
+        gpios = <&gpio2 9 GPIO_ACTIVE_HIGH>;
+        status = "okay";
+    };
+};
+
+&led0 {
+    status = "disabled";
+};
+```
+
+The application obtains the device with:
+
+```C++
+#define LED_SENSOR_NODE DT_ALIAS(led_sensor)
+static const struct device *const led_sensor = DEVICE_DT_GET(LED_SENSOR_NODE);
+```
+
+GPIO setup and toggle calls were replaced by `device_is_ready`, `sensor_sample_fetch_chan`, and `sensor_channel_get`, keeping the original loop structure and log format:
+
+```C++
+while (1) {
+    sensor_sample_fetch_chan(led_sensor, SENSOR_CHAN_ALL);
+    k_msleep(CONFIG_APP_HEARTBEAT_PERIOD_MS / 2);
+
+    sensor_channel_get(led_sensor, SENSOR_CHAN_PROX, &val);
+    led_state = !led_state;
+    LOG_INF("LED state: %s", led_state ? "ON" : "OFF");
+
+    k_msleep(CONFIG_APP_HEARTBEAT_PERIOD_MS / 2);
+}
+```
+
+Each cycle splits `APP_HEARTBEAT_PERIOD_MS` in half: the LED is on between fetch and get, then off until the next fetch (similar duty cycle to the original GPIO toggle).
+
+The board `led0` node is disabled in a separate overlay fragment (`&led0 { status = "disabled"; };`) because it shares the same GPIO with `led-sensor`; otherwise the `gpio-leds` driver would conflict with our sensor driver.
+
+### Build and Flash
+
+Build the application for the custom board (run from the `zephyr-course/` directory):
+
+```bash
+west build -b our_board/nrf54l15/cpuapp app/ -p -d build-l6-t1 -DBOARD_ROOT=$PWD/app
+```
+
+To flash the firmware:
+
+```bash
+west flash -d build-l6-t1
+```
+
+#### Evidence
+
+The on-board LED0 should blink (on after fetch, off after get; full blink period = `APP_HEARTBEAT_PERIOD_MS`, default 500 ms).
+
+![gif-from-l6-t1](img/l6-t1.gif)
+
+Open a serial terminal on the board UART at 115200 baud (`minicom`).
+```bash
+minicom -D /dev/ttyACM1
+```
+
+The expected output alternates:
+
+```
+[00:00:00.250,000] <inf> main: LED state: ON
+[00:00:00.500,000] <inf> main: LED state: OFF
+```
+
+![screenshot-from-l6-t1](img/l6-t1.png)
+
+The on-board LED should blink at half the heartbeat period on and half off (full period = `APP_HEARTBEAT_PERIOD_MS`). Serial logs alternate `LED state: ON` / `OFF` each cycle.
+
+To open the configuration interface:
+
+```bash
+west build -d build-l6-t1 -t menuconfig
+```
+
+Navigate to **Custom drivers** and confirm `CONFIG_LED_SENSOR` is enabled.
+
+![screenshot-from-l6-t1](img/l6-t1-menuconfig.png)
+
+### Result
+
+This task validates:
+
+- Implementation of an out-of-tree sensor driver with `sample_fetch` and `channel_get`
+- Devicetree binding and overlay integration for a custom compatible
+- Kconfig and CMake wiring to enable and build the driver
+- Application use of the Zephyr sensor API instead of direct GPIO access
+- Visible LED blink driven by fetch/get timing without GPIO pin conflicts
