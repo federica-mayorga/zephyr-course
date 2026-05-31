@@ -1,5 +1,17 @@
 / {
     aliases {
         app-led = &led0;
+        led-sensor = &led_sensor;
     };
+
+    led_sensor: led-sensor {
+        compatible = "zephyr-course,led-sensor";
+        gpios = <&gpio2 9 GPIO_ACTIVE_HIGH>;
+        status = "okay";
+    };
+};
+
+/* Same GPIO as led0: disable gpio-leds so only our driver owns the pin */
+&led0 {
+    status = "disabled";
 };
