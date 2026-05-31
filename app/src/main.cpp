@@ -1,3 +1,5 @@
+#include <led_sensor.h>
+
 #include <zephyr/device.h>
 #include <zephyr/drivers/sensor.h>
 #include <zephyr/kernel.h>
@@ -22,6 +24,10 @@ int main(void)
 	}
 
 	while (1) {
+		if (led_sensor_set_sample(led_sensor, led_state ? 1 : 0) < 0) {
+			return 0;
+		}
+
 		if (sensor_sample_fetch_chan(led_sensor, SENSOR_CHAN_ALL) < 0) {
 			return 0;
 		}
@@ -33,7 +39,8 @@ int main(void)
 		}
 
 		led_state = !led_state;
-		LOG_INF("LED state: %s", led_state ? "ON" : "OFF");
+		LOG_INF("LED state: %s, sample: %d", led_state ? "ON" : "OFF",
+			led_sensor_get_sample(led_sensor));
 
 		k_msleep(CONFIG_APP_HEARTBEAT_PERIOD_MS / 2);
 	}
