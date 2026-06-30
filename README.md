@@ -733,3 +733,86 @@ This task validates:
 - Modification of a runtime (`dev->data`) field through the extension API
 - Application use of driver-specific wrappers instead of accessing driver data directly
 - Correct interaction between extension API, `sample_fetch` / `channel_get`, and logging
+
+---
+
+# Lesson 7
+
+## Task 1
+
+1. Expose the LED sensor through the Zephyr shell.
+
+    1. Add a root `sensor` command with subcommands `fetch`, `read`, and `info`.
+    2. Wire each subcommand to the corresponding Zephyr sensor API.
+    3. Enable serial shell support in the application configuration.
+    4. Build, flash, and validate the commands over the UART console.
+
+2. Push tag: `l7-task1`.
+
+This task demonstrates how to expose a custom sensor driver through the Zephyr shell so it can be inspected and exercised at runtime without changing the firmware for every test.
+
+### Shell Integration
+
+The application registers a shell command tree in `app/src/main.cpp` for the existing LED sensor driver:
+
+- `sensor fetch` calls `sensor_sample_fetch()`
+- `sensor read` calls `sensor_channel_get()` for `SENSOR_CHAN_PROX`
+- `sensor info` prints the device name and readiness state
+
+The handlers are registered using the Zephyr shell macros `SHELL_STATIC_SUBCMD_SET_CREATE` and `SHELL_CMD_REGISTER`.
+
+Serial shell support is enabled in `app/prj.conf`:
+
+```text
+CONFIG_SHELL=y
+CONFIG_SHELL_BACKEND_SERIAL=y
+```
+
+### Build and Flash
+
+Build and flash the application from the `zephyr-course/` directory:
+
+```bash
+west build -b our_board/nrf54l15/cpuapp app/ -p -d build-l7-t1 -DBOARD_ROOT=$PWD/app
+```
+
+```bash
+west flash -d build-l7-t1
+```
+
+Open a serial terminal at 115200 baud (`minicom` or similar):
+
+```bash
+minicom -D /dev/ttyACM1
+```
+
+> NOTE: The device `/dev/ttyACM1` may have a different name on your computer.
+
+Once the board is running, the following commands can be used from the shell:
+
+```text
+uart:~$ sensor fetch
+sensor_sample_fetch() called
+
+uart:~$ sensor read
+prox: 0.000000
+
+uart:~$ sensor info
+name: led-sensor
+ready: yes
+```
+
+The LED heartbeat loop continues to run in the background while the shell commands are available for interactive inspection.
+
+#### Evidence
+
+![screenshot-from-l7-t1](img/l7-t1.png)
+
+### Result
+
+This task validates:
+
+- Integration of a custom Zephyr driver with the shell subsystem
+- Runtime inspection of sensor behavior through serial commands
+- Use of standard sensor APIs from a shell command path
+- Easier debugging and testing of driver functionality on the target board

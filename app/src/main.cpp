@@ -4,6 +4,8 @@
 #include <zephyr/drivers/sensor.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
+#include <zephyr/shell/shell.h>
+#include <zephyr/sys/util.h>
 
 #define SLEEP_TIME_MS 1000
 
@@ -13,6 +15,67 @@
 static const struct device *const led_sensor = DEVICE_DT_GET(LED_SENSOR_NODE);
 
 LOG_MODULE_REGISTER(main, LOG_LEVEL_INF);
+
+extern "C" int cmd_sensor_fetch(const struct shell *shell, size_t argc, char **argv)
+{
+	ARG_UNUSED(argc);
+	ARG_UNUSED(argv);
+
+	if (!device_is_ready(led_sensor)) {
+		shell_error(shell, "sensor device is not ready");
+		return -ENODEV;
+	}
+
+	int ret = sensor_sample_fetch(led_sensor);
+	if (ret < 0) {
+		shell_error(shell, "sensor_sample_fetch() failed: %d", ret);
+		return ret;
+	}
+
+	shell_print(shell, "sensor_sample_fetch() called");
+	return 0;
+}
+
+extern "C" int cmd_sensor_read(const struct shell *shell, size_t argc, char **argv)
+{
+	ARG_UNUSED(argc);
+	ARG_UNUSED(argv);
+	struct sensor_value val;
+	int ret;
+
+	if (!device_is_ready(led_sensor)) {
+		shell_error(shell, "sensor device is not ready");
+		return -ENODEV;
+	}
+
+	ret = sensor_channel_get(led_sensor, SENSOR_CHAN_PROX, &val);
+	if (ret < 0) {
+		shell_error(shell, "sensor_channel_get() failed: %d", ret);
+		return ret;
+	}
+
+	shell_print(shell, "prox: %d.%06d", val.val1, val.val2);
+	return 0;
+}
+
+extern "C" int cmd_sensor_info(const struct shell *shell, size_t argc, char **argv)
+{
+	ARG_UNUSED(argc);
+	ARG_UNUSED(argv);
+
+	shell_print(shell, "name: %s", led_sensor->name);
+	shell_print(shell, "ready: %s", device_is_ready(led_sensor) ? "yes" : "no");
+	return 0;
+}
+
+SHELL_STATIC_SUBCMD_SET_CREATE(sensor_subcmds,
+	SHELL_CMD(fetch, NULL, "Call sensor_sample_fetch()", cmd_sensor_fetch),
+	SHELL_CMD(read, NULL, "Call sensor_channel_get() for PROX", cmd_sensor_read),
+	SHELL_CMD(info, NULL, "Print sensor name and ready state", cmd_sensor_info),
+	SHELL_SUBCMD_SET_END
+);
+
+SHELL_CMD_REGISTER(sensor, &sensor_subcmds, "LED sensor commands", NULL);
 
 int main(void)
 {
@@ -39,7 +102,7 @@ int main(void)
 		}
 
 		led_state = !led_state;
-		LOG_INF("LED state: %s, sample: %d", led_state ? "ON" : "OFF",
+		LOG_DBG("LED state: %s, sample: %d", led_state ? "ON" : "OFF",
 			led_sensor_get_sample(led_sensor));
 
 		k_msleep(CONFIG_APP_HEARTBEAT_PERIOD_MS / 2);
