@@ -954,3 +954,46 @@ This task validates:
 - Covering initialization, push/pop, FIFO order, and boundary behavior
 - Verifying the public API through black-box tests
 - Running and confirming the test suite with Twister
+
+## Task 2
+
+1. Run the coverage report focused on the `ring_buf` module.
+
+2. Open `twister-out/coverage/index.html` and verify the expected coverage numbers.
+
+3. Include the `twister-out/coverage/` directory in the commit.
+
+4. Push tag: `l8-task2`.
+
+This task extends the unit testing work by generating a coverage report for the `ring_buf` implementation and confirming that the module reaches the expected thresholds.
+
+### Coverage Report
+
+The coverage report was generated with:
+
+```bash
+west twister -T tests/ring_buf -p native_sim \
+    --coverage --coverage-tool gcovr \
+    --coverage-basedir app/modules/ring_buf
+```
+
+The generated report was opened in `twister-out/coverage/index.html` and verified against the expected values:
+
+```text
+Lines: 81.4%
+Functions: 100.0%
+Branches: 64.3%
+```
+
+#### Evidence
+
+![screenshot-from-l8-t2](img/l8-t2.png)
+
+### Result
+
+This task validates:
+
+- Generating a Twister coverage report for a Zephyr module
+- Verifying module coverage thresholds for lines, functions, and branches
+- Including the coverage output in the repository history
+- Tagging the completed work as `l8-task2`

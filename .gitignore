@@ -3,7 +3,8 @@ build
 build-*
 
 # Twister
-twister-*
+!twister-out/coverage/
+!twister-out/coverage/**
 
 # West files
 .west
