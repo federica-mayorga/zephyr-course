@@ -816,3 +816,84 @@ This task validates:
 - Runtime inspection of sensor behavior through serial commands
 - Use of standard sensor APIs from a shell command path
 - Easier debugging and testing of driver functionality on the target board
+
+---
+
+## Task 2
+
+1. Expose the extension API from Lesson 6 Task 2 as a shell subcommand.
+
+    1. Add a `sensor ser <value>` command.
+    2. Use `SHELL_CMD_ARG` so the shell enforces the argument count.
+    3. Validate the input value and print an error with `shell_error` when it is missing or out of range.
+    4. Build, flash, and validate the command over the UART console.
+
+2. Push tag: `l7-task2`.
+
+This task demonstrates how to expose a custom driver extension API through the Zephyr shell so its runtime behavior can be changed interactively.
+
+### Shell Integration
+
+The application adds a new shell handler in `app/src/main.cpp` for the custom extension API from Lesson 6 Task 2:
+
+- `sensor ser <value>` updates the internal sample value used by the sensor driver
+- The command accepts only `0` or `1`
+- Missing or invalid values are rejected with `shell_error`
+
+The argument count is enforced by `SHELL_CMD_ARG`, and the handler validates the value before calling `led_sensor_set_sample()`.
+
+### Build and Flash
+
+Build and flash the application from the `zephyr-course/` directory:
+
+```bash
+west build -b our_board/nrf54l15/cpuapp app/ -p -d build-l7-t2 -DBOARD_ROOT=$PWD/app
+```
+
+```bash
+west flash -d build-l7-t2
+```
+
+Open a serial terminal at 115200 baud (`minicom` or similar):
+
+```bash
+minicom -D /dev/ttyACM1
+```
+
+> NOTE: The device `/dev/ttyACM1` may have a different name on your computer.
+
+Once the board is running, the following commands can be used from the shell:
+
+```text
+uart:~$ sensor ser 1
+sample set to 1
+
+uart:~$ sensor read
+prox: 1.000000
+
+uart:~$ sensor ser 0
+sample set to 0
+
+uart:~$ sensor read
+prox: 0.000000
+```
+
+The command also rejects invalid input:
+
+```text
+uart:~$ sensor ser 2
+value must be 0 or 1
+```
+
+#### Evidence
+
+![screenshot-from-l7-t2](img/l7-t2.png)
+
+### Result
+
+This task validates:
+
+- Exposure of a custom driver extension API through the shell
+- Validation of shell arguments with `SHELL_CMD_ARG`
+- Runtime update of sensor state through a serial command
+- Easier interactive testing of driver behavior on the target board
