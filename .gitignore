@@ -2,6 +2,9 @@
 build
 build-*
 
+# Twister
+twister-*
+
 # West files
 .west
 .venv

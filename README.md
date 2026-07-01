@@ -897,3 +897,60 @@ This task validates:
 - Validation of shell arguments with `SHELL_CMD_ARG`
 - Runtime update of sensor state through a serial command
 - Easier interactive testing of driver behavior on the target board
+
+---
+
+# Lesson 8
+
+## Task 1
+
+1. Implement the missing unit tests for the `ring_buf` module.
+
+    1. Fill the 7 stub `ZTEST` bodies in `tests/ring_buf/src/test_ring_buf.c`.
+    2. Verify all 8 tests pass with Twister.
+
+2. Push tag: `l8-task1`.
+
+This task demonstrates how to write black-box unit tests for a small Zephyr module using ZTest. The tests exercise the public API of the `ring_buf` module without depending on its internal implementation details.
+
+### Test Implementation
+
+The test suite covers the following behaviors:
+
+- Reinitialization clears previously stored state
+- A single push/pop round-trip works correctly
+- FIFO order is preserved across multiple pushes and pops
+- Pushing when the buffer is full returns `-ENOSPC`
+- `rb_peek()` does not consume the element
+- `rb_pop(NULL)` returns `-EINVAL`
+- `rb_is_full()` becomes true after the buffer is filled
+
+The implementation is located in `tests/ring_buf/src/test_ring_buf.c` and uses `zassert_*` assertions to validate each expected behavior.
+
+### Verification
+
+The tests were run with:
+
+```bash
+west twister -T tests/ring_buf -p native_sim -v
+```
+
+Observed result:
+
+```text
+INFO    - 1 test scenarios (1 configurations) selected
+INFO    - 8 of 8 executed test cases passed (100.00%)
+```
+
+#### Evidence
+
+![screenshot-from-l8-t1](img/l8-t1.png)
+
+### Result
+
+This task validates:
+
+- Writing unit tests for a Zephyr module with ZTest
+- Covering initialization, push/pop, FIFO order, and boundary behavior
+- Verifying the public API through black-box tests
+- Running and confirming the test suite with Twister
